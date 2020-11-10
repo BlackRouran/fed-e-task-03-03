@@ -1,4 +1,6 @@
 module.exports = {
+  // 注册插件
+  plugins: ['~/plugins/request.js'],
   router: {
     linkActiveClass: 'active',
     // 自定义路由
@@ -49,5 +51,10 @@ module.exports = {
         }
       ])
     }
+  },
+
+  server: {
+    host: '0.0.0.0',
+    port: 3000
   }
 }

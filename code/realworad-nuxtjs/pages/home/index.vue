@@ -12,11 +12,41 @@
 				<div class="col-md-9">
 					<div class="feed-toggle">
 						<ul class="nav nav-pills outline-active">
-							<li class="nav-item">
-								<a class="nav-link disabled" href="">Your Feed</a>
+							<li class="nav-item" v-if="user">
+								<nuxt-link 
+								class="nav-link" 
+								:class="{'active': tab === 'your_feed'}"
+								exact
+								:to="{
+									name: 'home',
+									query: {
+										tab: 'your_feed'
+									}
+								}">Your Feed</nuxt-link>
 							</li>
 							<li class="nav-item">
-								<a class="nav-link active" href="">Global Feed</a>
+								<nuxt-link 
+								class="nav-link" 
+								:class="{'active': tab === 'global_feed'}"
+								exact
+								:to="{
+									name: 'home',
+									query: {
+										tab: 'global_feed'
+									}
+								}">Global Feed</nuxt-link>
+							</li>
+							<li class="nav-item" :class="{'active': tab === 'tag_feed'}" v-if="tag">
+								<nuxt-link class="nav-link"
+							 	exact
+								 :to="{
+									 name: 'home',
+										query: {
+										tab: 'tag_feed',
+										tag: tag
+									}
+								 }"
+								 >#{{tag}}</nuxt-link>
 							</li>
 						</ul>
 					</div>
@@ -50,64 +80,79 @@
 							<span>Read more...</span>
 						</nuxt-link>
 					</div>
-
 					<!-- 分页 -->
-
 					<nav>
 						<ul class="pagination">
 							<li class="page-item" :class="{'active': page === item}" v-for="(item, index) in totlePages" :key="index">
 								<nuxt-link class="page-link" :to="{
 									name: 'home',
 									query: {
-										page: item
+										page: item,
+										tag: $route.query.tag	,
+										tab: tab
 									}
 								}">{{ item }}</nuxt-link>
 							</li>
 						</ul>
 					</nav>
-
 				</div>
-
+					<!-- 标签  -->
 				<div class="col-md-3">
-					<div class="sidebar">
-						<p>Popular Tags</p>
-
-						<div class="tag-list">
-							<a href="" class="tag-pill tag-default">programming</a>
-							<a href="" class="tag-pill tag-default">javascript</a>
-							<a href="" class="tag-pill tag-default">emberjs</a>
-							<a href="" class="tag-pill tag-default">angularjs</a>
-							<a href="" class="tag-pill tag-default">react</a>
-							<a href="" class="tag-pill tag-default">mean</a>
-							<a href="" class="tag-pill tag-default">node</a>
-							<a href="" class="tag-pill tag-default">rails</a>
-						</div>
-					</div>
-				</div>
+        <div class="sidebar">
+          <p>Popular Tags</p>
+          <div class="tag-list" v-for="(item, index) in tags" :key="index">
+           <nuxt-link :to="{
+									name: 'home',
+									query: { 	
+										tag: item,
+										tab: 'tag_feed'
+									}
+								}" class="tag-pill tag-default">{{ item }}</nuxt-link>
+          </div>
+        </div>
+      </div>
+			<!-- 标签 -->
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
-import { getArticles } from '@/api/article'
+import { getArticles, getFeedArticles } from '@/api/article'
+import { getTags } from '@/api/tag'
+import { mapState } from 'vuex'
+
 export default {
 	name: 'homeIndex',
-	async asyncData ( {query} ) {
+	async asyncData ( {query, store} ) {
 		const page = Number.parseInt(query.page || 1) 
-		const limit = 10
-		const { data } = await getArticles({
-			limit,
-			offset: (page - 1) * 2
-		})
+		const limit = 20
+		const { tag } = query
+		const tab = query.tab || 'global_feed'
+		const loodArticles = store.state.user &&  tab === 'your_feed' ? getFeedArticles : getArticles
+		const [articleRes, tagRes] = await Promise.all([
+			loodArticles({
+					limit,
+					offset: (page - 1) * limit,
+					tag
+				}),
+			getTags()
+		])
+		const { articles, articlesCount } = articleRes.data
+		const { tags } = tagRes.data
 		return {
-			articles: data.articles,
-			articlesCount: data.articlesCount,
+			articles,
+			articlesCount,
 			limit,
-			page
+			page,
+			tags,
+			tag,
+			tab
 		}
 	},
+	watchQuery: ['page', 'tag'],
 	computed: {
+		...mapState(["user"]),
 		totlePages () {
 			return Math.ceil(this.articlesCount / this.limit)
 		}
@@ -115,4 +160,5 @@ export default {
 }
 </script>
 
-<style></style>
+<style>
+</style>
