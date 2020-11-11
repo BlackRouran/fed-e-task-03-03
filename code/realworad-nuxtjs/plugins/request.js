@@ -6,7 +6,7 @@ export const request = axios.create({
 
 // 通过插件 context 获取数据
 // 插件必须作为默认导出
-export default ({ store }) => {
+export default ({ store }) => {  
   // 请求拦截器
  request.interceptors.request.use(function(config){
    const { user } = store.state 
